@@ -20,6 +20,12 @@ const COLORED = true;   // 色をつけるかどうか
 const ADD_RANDOM = false;
 
 let systems = []; // 系の配列
+let envelope;
+let count=0;
+let sounfOfFreq;
+let interval=100;
+let deltaFreq=0;
+let filterFreq;
 
 // 質量のクラス
 class Mass {
@@ -162,6 +168,19 @@ function setup() {
             systems[j][i].x += (i === 0) ? -systems[j][i].dx : ((i === N - 1) ? systems[j][i].dx : 0);
         }
     }
+    osc      = new p5.SinOsc();
+    envelope = new p5.Env();
+    delay= new p5.Delay();    
+    reverb   = new p5.Reverb();
+    filter = new p5.BandPass()
+    
+    envelope.setADSR(0.01, 0.9, 0.1, 100.0);
+    envelope.setRange(2,1);
+    osc.amp(0.5);
+    delay.process(osc, 0.4, .39, 230);
+    reverb.process(osc, 5,10);
+    //osc.freq(440);
+    //osc.start();    
 }
 
 function draw() {
@@ -224,6 +243,23 @@ function draw() {
             }
             ellipse(mass.x, j * height / M / 0.8, mass.radius, mass.radius);
         }
+    }
+
+
+    if (count>interval) {
+	count=0;
+	interval=random(10,400);	
+	osc.start();
+	deltaFreq=random(10,40);
+    }
+    else {
+	osc.stop();
+	soundOfFreq=midiToFreq(floor(random(60,100)))
+	osc.freq(soundOfFreq);
+	//envelope.play(osc,2.0,4.0);
+	filter.freq(soundOfFreq-deltaFreq);
+	filter.res(100-constrain(count,10,100))
+	count++;
     }
 }
 
