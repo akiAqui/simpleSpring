@@ -1,5 +1,5 @@
-// ver4.0
-// full screen version
+// ver3.5
+// full screen colored version 
 // spring and mass
 // 1 dimenstion x M
 //
@@ -11,14 +11,13 @@ const DT = 0.1;          // シミュレーションの時間の粒度
 const N = 31;            // I系の球の数
 const M = 29;            // II系内のI系の数
 const RADIUS = 10;       // 球の重さ
-const SPRING_WIDTH = 2;  // バネ描画時の線の太さ
+const SPRING_WIDTH = 0;  // バネ描画時の線の太さ
 const INITIAL_DX = 20;   // 球の初期位置の変位
 const VX = 0;            // 球の初期速度
 const AX = 0;            // 球の初期加速度
-const MASS_COLOR = [255, 0, 0];   // 球の色
-const WHITE_COLOR = [255, 255, 255];  // 白色
 const LEFT_GAP = RADIUS * 0.5;   // 左側の余白
-const COLORED = false;   // 色をつけるかどうか
+const COLORED = true;   // 色をつけるかどうか
+const ADD_RANDOM = false;
 
 let systems = []; // 系の配列
 
@@ -45,8 +44,87 @@ class Spring {
         this.weight = weight; // 線の太さ
     }
 }
+/*
+// 乱数を加える関数
+function addRandomness(obj, prop, min, max) {
+    let r = random(min, max);
+    obj[prop] += r;
+}
+
+function Randomness() {
+    // 球の初期変位に乱数を加える
+    for (let j = 0; j < M; j++) {
+        for (let i = 0; i < N; i++) {
+            addRandomness(systems[j][i], 'dx', -10, 10);
+            addRandomness(systems[j][i], 'radius', -1, 3);
+            addRandomness(systems[j][i], 'x', -5, 5); // 球の位置に乱数を加える
+        }
+    }
+    // バネの太さに乱数を加える
+    for (let j = 0; j < M; j++) {
+        for (let i = N; i < systems[j].length; i++) {
+            addRandomness(systems[j][i], 'weight', -1, 1);
+        }
+    }
+}
+function tryRandomness(obj, prop, min, max){
+    let r;
+    for (let j = 0; j < M; j++) {
+        for (let i = 0; i < N; i++) {
+	    r=random(min,max);
+	    systems[j][i][prop] += r;
+	}
+    }
+}
+*/
+let random_input= {
+    "mass": [
+	{
+	    "prop": "dx",
+	    "min":  -30,
+	    "max":   30
+	},
+	{
+	    "prop": "radius",
+	    "min":  -10,
+	    "max":   10
+	}
+    ],
+    "spring":[
+	{
+	    "prop": "k",
+	    "min":  3,
+	    "max":  -3
+	}
+    ]
+}
+
+function execRandomness() {
+    let r;
+
+    for (let k = 0; k < random_input.mass.length; k++) {
+	for (let j = 0; j < M; j++) {
+            for (let i = 0; i < N; i++) {
+		r=random(random_input.mass[k].min,  random_input.mass[k].max);
+		systems[j][i][random_input.mass[k].prop] += r;
+	    }
+	}
+    }
+    for (let k = 0; k < random_input.spring.length; k++) {
+	for (let j = 0; j < M; j++) {
+            for (let i = 0; i < N; i++) {
+		r=random(random_input.spring[k].min,  random_input.spring[k].max);
+		systems[j][i][random_input.spring[k].prop] += r;
+	    }
+	}
+    }
+}
+
 
 function setup() {
+    let MASS_COLOR = color(255, 0, 0);   // 球の色 関数内部に定義しないとエラーが出る
+    let WHITE_COLOR = color(255, 255, 255);  // 白色　関数内部に定義しないとエラーが出る
+   
     createCanvas(1800, 900);
     textSize(16);
     textFont('Open Sans', 16);
@@ -64,28 +142,20 @@ function setup() {
         systems.push(system);
     }
 
-    // 乱数を加える
-    for (let k = 0; k < N * M * 3; k++) {
-        let n = floor(random(0, N - 1));
-        let m = floor(random(0, M - 1));
-        let r = random(-10, 10); // 球のdxの初期値に加える乱数
-        systems[m][n].dx += r;
-        
-        let radiusRandom = random(-1, 3); // 球の半径に加える乱数
-        systems[m][n].radius += radiusRandom;
-    }
-
     // バネの初期化
     for (let j = 0; j < M; j++) {
         for (let i = 0; i < N - 1; i++) {
             let color = MASS_COLOR; // 色の初期値
             let weight = SPRING_WIDTH; // 線の太さの初期値
-            let weightRandom = random(-1, 1); // バネの太さに加える乱数
-            weight += weightRandom;
             systems[j].push(new Spring(K, L, color, weight));
         }
     }
-
+    
+    //  if (ADD_RANDOM)   Randomness();
+    
+    // バネと球の初期状態に対してランダムさを追加
+    execRandomness();
+    
     // 初期変位を適用
     for (let j = 0; j < M; j++) {
         for (let i = 0; i < N; i++) {
@@ -95,13 +165,16 @@ function setup() {
 }
 
 function draw() {
+    let MASS_COLOR = color(255, 0, 0);   // 球の色 関数内部に定義しないとエラーが出る
+    let WHITE_COLOR = color(255, 255, 255);  // 白色 関数内部に定義しないとエラーが出る
     background(255);
     translate(width / 2, height / (2 * M));
     
     for (let j = 0; j < M; j++) {
         // 運動方程式
         for (let i = 0; i < N - 1; i++) {
-            let force = systems[j][N + i].k * (systems[j][i + 1].x - systems[j][i].x - 2 * systems[j][N + i].length); // バネ定数とバネの長さを使用
+	    // バネ定数とバネの長さを使用
+            let force = systems[j][N + i].k * (systems[j][i + 1].x - systems[j][i].x - 2 * systems[j][N + i].length);
             systems[j][i].f += force;
             systems[j][i + 1].f -= force;
         }
@@ -115,7 +188,6 @@ function draw() {
         }
 	
         // ばねの描画
-        //strokeWeight(SPRING_WIDTH);
         for (let i = 0; i < N - 1; i++) {
             let x1 = systems[j][i].x;
             let x2 = systems[j][i + 1].x;
@@ -126,19 +198,17 @@ function draw() {
                 let maxLength = 2 * spring.length + systems[j][i].dx + systems[j][i + 1].dx;
                 let minLength = 2 * spring.length - systems[j][i].dx - systems[j][i + 1].dx;
                 let ratio = (springLength - minLength) / (maxLength - minLength);
-                let color = lerpColor(color(spring.color), color(WHITE_COLOR), ratio);
+                let color = lerpColor(spring.color, WHITE_COLOR, ratio);
                 stroke(color);
             } else {
                 stroke(0);
             }
-            
             strokeWeight(spring.weight);
             line(x1, j * height / M / 0.8, x2, j * height / M / 0.8);
         }
 	
         // 質量の描画
         strokeWeight(1);
-        //fill(255);
         for (let i = 0; i < N; i++) {
             let mass = systems[j][i];
             
@@ -147,12 +217,11 @@ function draw() {
                 let maxLength = 4 * L + mass.dx;
                 let minLength = 4 * L - mass.dx;
                 let ratio = (springLength - minLength) / (maxLength - minLength);
-                let color = lerpColor(color(mass.color), color(WHITE_COLOR), ratio);
+                let color = lerpColor(mass.color, WHITE_COLOR, ratio);
                 fill(color);
             } else {
                 fill(255);
             }
-            
             ellipse(mass.x, j * height / M / 0.8, mass.radius, mass.radius);
         }
     }
