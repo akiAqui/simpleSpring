@@ -1,3 +1,8 @@
+// full screen version
+// spring and mass
+// 1 dimenstion x M
+//
+
 // 定数
 const k = 1.1; // ばね定数
 const L = 20; // ばねの半分の長さ
